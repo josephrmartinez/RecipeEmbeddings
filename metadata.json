@@ -1,0 +1,23 @@
+{
+    "title": "RecipeEmbeddings",
+    "description": "Search recipes using embeddings.",
+    "databases": {
+      "5krecipes": {
+        "queries": {
+          "sample": {
+            "hide_sql": true,
+            "sql": "SELECT * FROM recipes ORDER BY RANDOM() LIMIT 10;"
+          },
+          "similar": {
+            "hide_sql": true,
+            "sql": "SELECT * FROM (SELECT *, ROW_NUMBER() OVER (PARTITION by brand ORDER BY title) AS rn FROM (WITH related AS (SELECT value FROM json_each(faiss_search('faucets', 'embeddings', (SELECT embedding FROM embeddings WHERE id = :input_faucet), 200))) SELECT * FROM related, faucets WHERE related.value = faucets.embedding_id) as similar) WHERE rn = 1"
+          }
+        }
+      }
+    },
+    "plugins": {
+      "datasette-scale-to-zero": {
+        "duration": "10m"
+      }
+    }
+  }
