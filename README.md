@@ -1,14 +1,27 @@
 TODO:
 - Calculate and save similarity calculations for every item in the database
-Time for completion: 
+Time for completion: 2:03:42 
+
+CREATE TABLE [similarities] (
+   [id] TEXT,
+   [other_id] TEXT,
+   [score] FLOAT,
+   PRIMARY KEY ([id], [other_id])
+);
+
+This table contains ten rows for each id. These are the top ten similarity scores for each id.
+
 
 
 - Seach embeddings with the search command: openai-to-sqlite search 5krecipes.db 'search term'
 The output will be a list of 10 cosine similarity scores and content IDs.
 
 - Search for similar content with the similar command:
-openai-to-sqlite similar 5krecipes.db '<content identifier(id?? title??)>'
-
+openai-to-sqlite similar 5krecipes.db '1'; (the last value in quotes is the id).
+This returns the ten rows associated with the item ID '1'.
+[id] TEXT,
+[other_id] TEXT,
+[score] FLOAT,
 
 
 
@@ -16,7 +29,7 @@ openai-to-sqlite similar 5krecipes.db '<content identifier(id?? title??)>'
 
     1. Compile Our Database: We’ll extract our embeddings table from the llm database and load it into a new SQLite database. We then load this database with a separate table containing image and product URLs for each faucet.
 
-    2. Install Some Plugins: Install the datasette plugins we’ll need: data-template-sql, datasette-faiss, datasette-publish-fly, and datasette-scale-to-zero.
+    2. Install Some Plugins: Install the datasette plugins we’ll need: dataSETTE-template-sql, datasette-faiss, datasette-publish-fly, and datasette-scale-to-zero.
     
     3. Design Our Templates: We want two pages for our app. The first serves up a random set of faucet images. Clicking one of these faucets sends you to our second page, which shows you faucets similar to the one you clicked. The first will be our home page, the second will be a “canned query” page that uses datasette-faiss to query our embeddings and accepts a faucet ID as an input parameter. We’ll build both pages using custom templates, overriding datasette’s default styles. For our home page, we’ll execute our query using data-template-sql.
 
