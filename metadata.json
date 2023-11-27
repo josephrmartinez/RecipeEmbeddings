@@ -3,10 +3,19 @@
     "description": "Search recipes using embeddings.",
     "databases": {
       "5krecipes": {
+        "tables" : {
+            "recipes_fts" : {
+                "hidden": false
+            }
+        },
         "queries": {
           "sample": {
             "hide_sql": true,
             "sql": "SELECT * FROM recipes ORDER BY RANDOM() LIMIT 10;"
+          },
+          "vibesearch": {
+            "hide_sql": false,
+            "sql": "select value from json_each(faiss_search_with_scores('5krecipes', 'embeddings', (select openai_embedding(:query, :openai_api_key)), 10))"
           },
           "similar": {
             "hide_sql": true,
@@ -18,6 +27,13 @@
     "plugins": {
       "datasette-scale-to-zero": {
         "duration": "10m"
+      },
+      "datasette-faiss": {
+        "tables": [
+            ["5krecipes", "embeddings"]
+        ]
       }
     }
   }
+
+

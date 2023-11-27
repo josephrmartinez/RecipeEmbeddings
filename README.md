@@ -1,11 +1,11 @@
 TODO:
-- Update metadata to set hidden=false on the recipes_fts table
+- Update metadata to set hidden=false on the recipes_fts table - NOT WORKING
 
 - Enable semantic search on recipes table
 
 - Create "similar" column, link to ten recipes. Or set up a link that displays the similar results.
 
-Run datasette with metadata: datasette 5krecipes.db --metadata metadata.json
+Run datasette with metadata: datasette 5krecipes.db --metadata metadata.json --setting sql_time_limit_ms 5500
 
 
 
