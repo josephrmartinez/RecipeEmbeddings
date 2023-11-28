@@ -1,17 +1,33 @@
-TODO:
+Run datasette with metadata: datasette 5krecipes.db --metadata metadata.json
+
+View recipes_fts on index page
 - Update metadata to set hidden=false on the recipes_fts table - NOT WORKING
 
-- Enable semantic search on recipes table
+Format response to vibesearch with LINK to recipes table
+- Values in id column should LINK to recipes table
 
+Publish datasette
+- Deploy datasettewith metadata, installed plugins, and .env link to api key
+- Store api key as env on openai_embeddings plug in?
+
+Create templates / separate UI site for datasette
+- Create template the allows full text and vibe search on database
+
+Connect with "similar recipes" data
 - Create "similar" column, link to ten recipes. Or set up a link that displays the similar results.
 
-Run datasette with metadata: datasette 5krecipes.db --metadata metadata.json --setting sql_time_limit_ms 5500
 
 
+DONE:
+
+Download dataset of 15k+ recipes
+Dataset:
+https://www.kaggle.com/datasets/pes12017000148/food-ingredients-and-recipe-dataset-with-images
+- Created excerpt version of database with just 5000 recipes
 
 
-- Calculate 5k embeddings of recipes: 
-2 mins to calculate embeddings (combine title, ingredients, instructions)
+- Calculate embeddings of each recipe (combine title, ingredients, instructions): 
+2 mins to calculate embeddings 
 Total tokens used: 1,909,617
 Less than $0.20 ???
 5,001 rows
@@ -31,17 +47,49 @@ This table contains ten rows for each id. These are the top ten similarity score
 
 
 - Seach embeddings with the search command: openai-to-sqlite search 5krecipes.db 'search term'
+"Search embeddings using cosine similarity against a query." This does NOT use FAISS, but a custom implementation:
+def cosine_similarity(a, b):
+    dot_product = sum(x * y for x, y in zip(a, b))
+    magnitude_a = sum(x * x for x in a) ** 0.5
+    magnitude_b = sum(x * x for x in b) ** 0.5
+    return dot_product / (magnitude_a * magnitude_b)
+
 The output will be a list of 10 cosine similarity scores and content IDs.
 
 openai-to-sqlite search 5krecipes.db 'thanksgiving'
 returns ten dishes with cosine similarities ranging from 0.775(Thanksgiving Dinner for One) to 0.766 (Mustard Seed Gravy). A few of the recipes do contain the word 'Thanksgiving' but other results are included such as a vegan Tofurkey with Mushroom Stuffing and Gravy and Chili of Forgiveness. Every dish includes Turkey (or Tofurkey).
+Running this from the command line took 2.62 seconds
 
-- Search for similar content with the similar command:
-openai-to-sqlite similar 5krecipes.db '1'; (the last value in quotes is the id).
-This returns the ten rows associated with the item ID '1'.
-[id] TEXT,
-[other_id] TEXT,
-[score] FLOAT,
+- Use FAISS search on datasette:
+"a highly regarded solutions for fast vector similarity calculations is FAISS, by Facebook AI research"
+
+Install plugins: 
+datasette install datasette-openai
+    - This allows me to use the openai_embeddings function.
+    openai_embedding(text, api_key)
+    This calls the OpenAI embedding endpoint and returns a binary object representing the floating point embedding for the provided text.
+
+datasette install datasette-faiss
+faiss_search_with_scores(database, table, embedding, k)
+Takes the same arguments as above, but the return value is a JSON array of pairs, each with an ID and a score
+
+Write custom datasette sql query:
+select value from json_each(faiss_search_with_scores('5krecipes', 'embeddings', (select openai_embedding(:query, :openai_api_key)), 10))
+
+Add "where length(coalesce(:query, '')) > 0" to prevent the query from running with an empty query. If you do not add this, you will get this error message "user-defined function raised exception". 
+"adding where length(coalesce(:query, '')) > 0 to the query means that the query won’t run if the user hasn’t entered any text into the search box." 
+
+select value from json_each(faiss_search_with_scores('5krecipes', 'embeddings', (select openai_embedding(:query, :openai_api_key)), 10)) where length(coalesce(:query, '')) > 0
+
+It takes about 229 ms to run query my database of 5,000 recipes with the term 'Thanksgiving'. 
+Compare this to the 2.62 seconds it took to run the query using openai-to-sqlite search in the command line with the custom cosine similarity search function.
+Both queries returned the exact same ten recipes. The scores, however, were different. 
+The openai-to-sqlite search values ranged from 0.775 to 0.766, the faiss_search_with_scores values ranged from 0.449 to 0.468. Notably, the values were associated with the IDs in the opposite order for each method. Check to see what this means or if additional score formatting is required. 
+
+With "vibes-based search" I can also search for something much more conceptual, such as "a small levantine appetizer". If I try using full-text search for this query, I get the following response: "0 rows where search matches "a small levantine appetizer" sorted by rowid"
+But with my custom query that creates an embedding on the query phrase and then uses FAISS to find the approximate nearest neighbors, I get "Sam's Spring Fattoush Salad", "spiced labneh", and eight other recipes. The word "levantine" does not show up at all in these recipes. Instead, the embedding helps us get at the underlying meaning in the query and ...
+
+
 
 
 
@@ -62,47 +110,7 @@ This returns the ten rows associated with the item ID '1'.
 - Use Principal Component Analysis to create an interactive 2D visualization: https://simonwillison.net/2023/Oct/23/embeddings/#visualize-in-2d-with-principal-component-analysis
 
 
-Dataset:
-https://www.kaggle.com/datasets/pes12017000148/food-ingredients-and-recipe-dataset-with-images
-- Created excerpt version of database with just 5000 recipes
 
 
-semantic search
+semantic search / vibe search
 —"find documents that match the meaning of the user’s search term, even if the matching keywords are not present."
-def search(db_path, query, token, table_name, count):
-    """
-    Search embeddings using cosine similarity against a query.
-
-    The query you pass will be embedded using the OpenAI API,
-    then the closest matching records from the table will be shown.
-    """
-    if not token:
-        raise click.ClickException(
-            "OpenAI API token is required, use --token=x or set the "
-            "OPENAI_API_KEY environment variable"
-        )
-    db = sqlite_utils.Database(db_path)
-    table = db[table_name]
-    if not table.exists():
-        raise click.ClickException(f"Table {table_name} does not exist")
-    # Fetch the embedding for the query
-    response = httpx.post(
-        "https://api.openai.com/v1/embeddings",
-        headers={
-            "Authorization": f"Bearer {token}",
-            "Content-Type": "application/json",
-        },
-        json={"input": query, "model": "text-embedding-ada-002"},
-    )
-    response.raise_for_status()
-    data = response.json()
-    vector = data["data"][0]["embedding"]
-    # Now calculate cosine similarity with everything in the database table
-    other_vectors = [(row["id"], decode(row["embedding"])) for row in table.rows]
-    results = [
-        (id, cosine_similarity(vector, other_vector))
-        for id, other_vector in other_vectors
-    ]
-    results.sort(key=lambda r: r[1], reverse=True)
-    for id, score in results[:count]:
-        print(f"{score:.3f} {id}")

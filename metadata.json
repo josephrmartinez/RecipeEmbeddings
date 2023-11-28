@@ -6,6 +6,9 @@
         "tables" : {
             "recipes_fts" : {
                 "hidden": false
+            },
+            "recipes" : {
+                "label_column": "id"
             }
         },
         "queries": {
@@ -15,7 +18,7 @@
           },
           "vibesearch": {
             "hide_sql": false,
-            "sql": "select value from json_each(faiss_search_with_scores('5krecipes', 'embeddings', (select openai_embedding(:query, :openai_api_key)), 10))"
+            "sql": "SELECT r.id, r.Title, ROUND(CAST(json_extract(value, '$[1]') AS REAL), 3) AS score FROM json_each(faiss_search_with_scores('5krecipes', 'embeddings', (SELECT openai_embedding(:query, :openai_api_key)), 10)) AS json_data JOIN recipes AS r ON r.id = CAST(json_extract(json_data.value, '$[0]') AS INTEGER) WHERE length(coalesce(:query, ''))>0;"
           },
           "similar": {
             "hide_sql": true,
