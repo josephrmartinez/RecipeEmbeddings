@@ -1,3 +1,7 @@
+Publish datasette
+- Deploy datasettewith metadata, installed plugins, and .env link to api key
+- Store api key as env on openai_embeddings plug in?
+
 Run datasette with metadata: datasette 5krecipes.db --metadata metadata.json
 
 View recipes_fts on index page
@@ -6,9 +10,7 @@ View recipes_fts on index page
 Format response to vibesearch with LINK to recipes table
 - Values in id column should LINK to recipes table
 
-Publish datasette
-- Deploy datasettewith metadata, installed plugins, and .env link to api key
-- Store api key as env on openai_embeddings plug in?
+
 
 Create templates / separate UI site for datasette
 - Create template the allows full text and vibe search on database
