@@ -1,6 +1,7 @@
 Publish datasette
 - Deploy datasettewith metadata, installed plugins, and .env link to api key
 - Store api key as env on openai_embeddings plug in?
+- install with plugins: datasette-openai, datasette-faiss
 
 Run datasette with metadata: datasette 5krecipes.db --metadata metadata.json
 
@@ -90,6 +91,20 @@ The openai-to-sqlite search values ranged from 0.775 to 0.766, the faiss_search_
 
 With "vibes-based search" I can also search for something much more conceptual, such as "a small levantine appetizer". If I try using full-text search for this query, I get the following response: "0 rows where search matches "a small levantine appetizer" sorted by rowid"
 But with my custom query that creates an embedding on the query phrase and then uses FAISS to find the approximate nearest neighbors, I get "Sam's Spring Fattoush Salad", "spiced labneh", and eight other recipes. The word "levantine" does not show up at all in these recipes. Instead, the embedding helps us get at the underlying meaning in the query and ...
+
+
+Deploy the app:
+datasette publish fly 5krecipes.db --app="recipe-embeddings" -m metadata.json --install=datasette-openai --install=datasette-faiss --install=datasette-scale-to-zero --generate-dir /Users/admin/Desktop/programming/repos/RecipeEmbeddings/deploy
+
+
+
+- I was able to deploy the app along with the metadata on the fly.io "free tier" with no problem: datasette publish fly 5krecipes.db --app="recipe-embeddings" -m metadata.json
+
+- But when I tried deploying the app with the plugins, I received an error: 
+"Your “recipe-embeddings” application hosted on Fly.io crashed because it ran out of memory. Specifically, the instance 3287174c57e585. Adding more RAM to your application might help!"
+
+
+
 
 
 

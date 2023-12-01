@@ -20,9 +20,13 @@
             "hide_sql": true,
             "sql": "SELECT * FROM recipes ORDER BY RANDOM() LIMIT 10;"
           },
+          "fulltextsearch": {
+            "hide_sql": false,
+            "sql": "SELECT Title, Ingredients, Instructions FROM recipes_fts WHERE recipes_fts MATCH :query;"
+          },
           "embeddingsearch": {
             "hide_sql": false,
-            "sql": "SELECT r.id, r.Title, ROUND(CAST(json_extract(value, '$[1]') AS REAL), 3) AS score FROM json_each(faiss_search_with_scores('5krecipes', 'embeddings', (SELECT openai_embedding(:query, :openai_api_key)), 10)) AS json_data JOIN recipes AS r ON r.id = CAST(json_extract(json_data.value, '$[0]') AS INTEGER) WHERE length(coalesce(:query, ''))>0;"
+            "sql": "SELECT ROUND(CAST(json_extract(value, '$[1]') AS REAL), 3) AS score, r.Title, r.Ingredients, r.Instructions FROM json_each(faiss_search_with_scores('5krecipes', 'embeddings', (SELECT openai_embedding(:query, :openai_api_key)), 10)) AS json_data JOIN recipes AS r ON r.id = CAST(json_extract(json_data.value, '$[0]') AS INTEGER) WHERE length(coalesce(:query, ''))>0;"
           }
         }
       }
