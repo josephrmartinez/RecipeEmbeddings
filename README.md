@@ -26,10 +26,14 @@ DONE:
 Download dataset of 15k+ recipes
 Dataset:
 https://www.kaggle.com/datasets/pes12017000148/food-ingredients-and-recipe-dataset-with-images
+
 - Created excerpt version of database with just 5000 recipes
 
 
 - Calculate embeddings of each recipe (combine title, ingredients, instructions): 
+
+
+
 2 mins to calculate embeddings 
 Total tokens used: 1,909,617
 Less than $0.20 ???
@@ -94,7 +98,7 @@ But with my custom query that creates an embedding on the query phrase and then 
 
 
 Deploy the app:
-datasette publish fly 5krecipes.db --app="recipe-embeddings" -m metadata.json --install=datasette-openai --install=datasette-faiss --install=datasette-scale-to-zero --generate-dir /Users/admin/Desktop/programming/repos/RecipeEmbeddings/deploy
+datasette publish fly 5krecipes.db --app="recipe-embeddings" -m metadata.json --install=datasette-openai --install=datasette-faiss --install=datasette-scale-to-zero
 
 
 
