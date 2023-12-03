@@ -2,7 +2,9 @@ Using Datasette to Implement Semantic Search Against a SQLite Database
 
 [Datasette](https://datasette.io/) is an open-source tool for exploring and publishing data. It allows you to create web interfaces for exploring databases with minimal effort. Developed by Simon Willison, the co-creator of the Django web framework, Datasette is similarily designed to be simple, lightweight, and easy to use. One of the things it greatly simplifies is the ability to quickly spin up "semantic search" against a SQLite database. 
 
-Semantic search is a method for returning highly relavant results based on *meaning* rather than just simple keyword filtering. In simplified terms, imagine you generate an associative meaning map around every item in a database (e.g. blog posts, documents, transcripts, articles). Semantic search would allow you to explore these resources based on their meaning maps, not just tags and keywords. We could search a recipe database with a query "comfort food" even if we never tagged any items with this term. I discussed this with a lawyer friend of mine and he immediately understood it as "vibe search." Fittingly, this is the same term that Simon Willison used in his [excellent post](https://simonwillison.net/2023/Oct/23/embeddings/) that describes working with embeddings in more detail. 
+Semantic search is a method for returning highly relavant results based on *meaning* rather than just simple keyword filtering. In simplified terms, imagine you generate an associative meaning map around every item in a database (e.g. blog posts, documents, transcripts, articles). Semantic search would allow you to explore these resources based on their meaning maps, not just tags and keywords. This would allow you to search a recipe database with a query "comfort food" even if no items were actually tagged with this term.   
+
+I discussed this with a lawyer friend of mine and he immediately understood it as "vibe search." Fittingly, this is the same term that Simon Willison used in his [excellent post](https://simonwillison.net/2023/Oct/23/embeddings/) that describes working with semantic search and embeddings in more detail. 
 
 This is super exciting!
 
@@ -24,6 +26,56 @@ It's generally a good practice to install Python packages, including Datasette a
 ```python3.11 -m venv venv
 source venv/bin/activate  # On Windows, use `venv\Scripts\activate`
 ```
+
+- Install datasette
+
+- Calculate embeddings of each recipe (combine title, ingredients, instructions): 
+2 mins to calculate embeddings 
+Total tokens used: 1,909,617
+Less than $0.20 ???
+5,001 rows
+
+
+- Use FAISS search on datasette:
+"a highly regarded solutions for fast vector similarity calculations is FAISS, by Facebook AI research"
+
+Install plugins: 
+datasette install datasette-openai
+    - This allows me to use the openai_embeddings function.
+    openai_embedding(text, api_key)
+    This calls the OpenAI embedding endpoint and returns a binary object representing the floating point embedding for the provided text.
+
+datasette install datasette-faiss
+faiss_search_with_scores(database, table, embedding, k)
+Takes the same arguments as above, but the return value is a JSON array of pairs, each with an ID and a score
+
+Write custom datasette sql query:
+select value from json_each(faiss_search_with_scores('5krecipes', 'embeddings', (select openai_embedding(:query, :openai_api_key)), 10))
+
+Add "where length(coalesce(:query, '')) > 0" to prevent the query from running with an empty query. If you do not add this, you will get this error message "user-defined function raised exception". 
+"adding where length(coalesce(:query, '')) > 0 to the query means that the query won’t run if the user hasn’t entered any text into the search box." 
+
+select value from json_each(faiss_search_with_scores('5krecipes', 'embeddings', (select openai_embedding(:query, :openai_api_key)), 10)) where length(coalesce(:query, '')) > 0
+
+It takes about 229 ms to run query my database of 5,000 recipes with the term 'Thanksgiving'. 
+
+
+With "vibes-based search" I can also search for something much more conceptual, such as "a small levantine appetizer". If I try using full-text search for this query, I get the following response: "0 rows where search matches "a small levantine appetizer" sorted by rowid"
+But with my custom query that creates an embedding on the query phrase and then uses FAISS to find the approximate nearest neighbors, I get "Sam's Spring Fattoush Salad", "spiced labneh", and eight other recipes. The word "levantine" does not show up at all in these recipes. Instead, the embedding helps us get at the underlying meaning in the query and ...
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 # Install Datasette and sqlite-utils within the virtual environment
 
 [sqlite-utils](https://datasette.io/tools/sqlite-utils), also by Simon Willison, is a CLI tool and Python library for manipulating SQLite databases. We're going to use sqlite-utils to extract the data we want from our CSV file and populate the SQLite database that we will then be working on with Datasette:
