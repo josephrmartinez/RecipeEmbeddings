@@ -1,4 +1,4 @@
-# Using Datasette to Implement Semantic Search Against a SQLite Database
+# Implementing Semantic Search for SQL Databases with Datasette
 
 [Datasette](https://datasette.io/) is an open-source tool for exploring and publishing data. It allows you to create web interfaces for exploring databases with minimal effort. Developed by Simon Willison, the co-creator of the Django web framework, Datasette is similarily designed to be simple, lightweight, and easy to use. One of the things it greatly simplifies is the ability to quickly spin up "semantic search" against a SQLite database. 
 
@@ -8,43 +8,44 @@ This is super exciting!
 
 I discussed this with a lawyer friend of mine and he immediately understood it as "vibe search." Fittingly, this is the same term that Willison used in his [excellent post](https://simonwillison.net/2023/Oct/23/embeddings/) that describes working with semantic search and embeddings in more detail. 
 
+I'm going to walk through how I used Datasette to quickly create and deploy a functional semantic search engine on a database of 5,000 recipes. With this semantic search implementation, we get relevant results from queries like "a small levantine appetizer."
 
-I'm going to walk through how I used Datasette to quickly create and deploy a functional semantic search engine on a database of 5,000 recipes. Semantic search will allow us to go beyond simple keyword lookup and use terms like "................."  The key point here is that you do not *need* a vector database or lots of tooling to quickly spin up powerful semantic search on a decent-sized data set.
+The key point here is that you do not *need* a vector database or lots of tooling to quickly spin up powerful semantic search on a decent-sized data set.
 
 ## Tutorial
 
-## Download dataset into project directory
-Grab the 5k-recipes.db file from this [free, simple, open recipe dataset repository](https://github.com/josephrmartinez/recipe-dataset). 5k-recipes.db is a simple dataset that includes the title, ingredients, and instructions for 5,000 recipes.
+### Download dataset into project directory
+We're going to work with a simple dataset that includes the title, ingredients, and instructions for 5,000 recipes. Grab the 5k-recipes.db file from this [recipe dataset repository](https://github.com/josephrmartinez/recipe-dataset).
 
-Create a project directory and move the 5k-recipes.db database file inside of this directory.
+Make a new project directory folder and move the 5k-recipes.db database file inside of this directory.
 
 
-## Create and activate virtual environment
+### Create and activate virtual environment
 Navigate to your project directory and create and activate a virtual environment running python 3.11. Datasette requires Python 3.7 or higher.
 
 ```python3.11 -m venv venv
 source venv/bin/activate  # On Windows, use `venv\Scripts\activate`
 ```
-## Install datasette
+### Install datasette
 It's generally a good practice to install Python packages within the virtual environment to keep dependencies isolated. This ensures that your project's dependencies won't interfere with other projects or the global Python environment. Use pip to install Datasette in your current virtual environment:
 
 ```pip install datasette```
 
 Or follow [these instructions](https://docs.datasette.io/en/stable/installation.html) to install Datasette globally on your machine.
 
-## Run datasette
+### Run Datasette
 With the terminal inside of your project directory and your virtual environment activated, run the following command to launch the Datasette server with our 5k-recipes database:
 
 ```datasette 5k-recipes.db```
 
 Open a browser and navigate to [http://127.0.0.1:8001](http://127.0.0.1:8001)
 
-You should be able to explore the 5k-recipes database easily now within the Datasette framework. This will allo you to 
+You should be able to easily explore the recipes table within the 5k-recipes database. 
 
-## Enable full text search
-Before we spin up semantic search, we are going to enable full text search on our recipes table. Enevtually, we will be able to run comparisons between the two search methods and evaluate response time as well as query flexibility.
+### Enable full text search
+Before we spin up semantic search, we are going to enable full text search on our recipes table. Eventually, we will be able to run comparisons between the two search methods and evaluate response time as well as query flexibility.
 
-### Install sqlite-utils
+#### Install sqlite-utils
 [sqlite-utils](https://datasette.io/tools/sqlite-utils), also by Simon Willison, is a CLI tool and Python library for manipulating SQLite databases. We're going to use sqlite-utils to [enable full-text search](https://sqlite-utils.datasette.io/en/stable/cli.html#configuring-full-text-search) across the Title, Ingredients, and Instructions columns in our recipes table:
 
 ```pip install sqlite-utils
