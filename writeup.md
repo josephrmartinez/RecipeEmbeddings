@@ -58,7 +58,7 @@ Notice that there is now a search box.
 
 Run a search for "comfort food."
 
-We get only two results. This is because the phrase "comfort food" shows up in the instructions for each of these recipes: "enter comfort food heaven," and "serve with some rice or fresh bread for the ultimate comfort food." Surely there are more than just two comfort food options in this collection of 5,000 recipes?
+We get two results because the phrase "comfort food" shows up in the instructions for two recipes. But surely there are more than just two recipes that would qualify as "comfort food" in this collection of 5,000 recipes.
 
 There are. And to find those items, we are going to start by calculating embeddings for all of the recipes in our database.
 
@@ -92,25 +92,25 @@ If you choose to download this resource, be sure to delete the old 5k-recipes.db
 
 When we enabled full text search on the recipes table, Datasette automatically enabled a search box for us to run queries against the table. In order to run semantic search queries in the Datasette web UI using the new recipe_embeddings table, we are going to create a [metadata](https://docs.datasette.io/en/stable/metadata.html) file with a ["canned query"](https://docs.datasette.io/en/stable/sql_queries.html#canned-queries) that uses some helpful functions from plugins that we will also install into Datasette.
 
-Create a metadata.json file in your project folder:
+Create a metadata.json file in your project folder with the following content:
 
 ```
 {
     "title": "Recipe Search",
     "description": "Full text and semantic search on 5,000 recipes.",
     "databases": {
-      "5k-recipes": {
+        "5k-recipes": {
         "source": "Recipe Dataset from Epicurious",
         "source_url": "https://github.com/josephrmartinez/recipe-dataset",
         "license": "CC BY-SA 3.0",
         "license_url": "https://creativecommons.org/licenses/by-sa/3.0/",
         "queries": {
         }
-      }
+        }
     },
     "plugins": {
     }
-  }
+}
 ```
 We will be adding information into the "queries" and "plugins" sections of the metadata file as we build out our custom query.
 
@@ -120,7 +120,7 @@ Close the terminal running your Datasette server and re-launch the server with t
 datasette 5k-recipes.db --metadata metadata.json
 ```
 
-Notice that the metadata above has been loaded into our Datasette web display: we see the database name, data source attribution, and so on. Now we are ready to build out the custom SQL query that will let us perform semantic search.
+Notice that the metadata above has been loaded into our Datasette web display. We see the database name, data source attribution, and so on. Now we are going to build out the custom SQL query that will let us perform semantic search. We will drop this query into out metadata file so that it is easy for users to invoke this from the Datasette web interface.
 
 To perform the search operation, we will use two functions:
 1. Calculate an embedding on the user's query
@@ -159,7 +159,7 @@ def cosine_similarity(a, b):
 
 This works, but it can be slow on larger datasets. To more efficiently perform this similarity search calculation, we are going to use the [Faiss](https://github.com/facebookresearch/faiss) library developed by Facebook AI Research. 
 
-The [datasette-faiss](https://datasette.io/plugins/datasette-faiss) plugin enables us to use the Faiss library easily within Datasette. This plugin creates in-memory Faiss indexes for specified tables on startup, using an IndexFlatL2 Faiss index type. The tables to be indexed must have id and embedding columns. Our recipe_embeddings table is already formatted properly. Let's install the plugin:
+The [datasette-faiss](https://datasette.io/plugins/datasette-faiss) plugin enables us to use the Faiss library easily within Datasette. This plugin creates in-memory Faiss indexes for specified tables on startup, using an IndexFlatL2 Faiss index type. The tables to be indexed must have id and embedding columns. Our recipe_embeddings table is already formatted properly, so we are ready to install the plugin:
 
 ```
 datasette install datasette-faiss
@@ -177,7 +177,7 @@ In order for the datasette-faiss plugin to function properly, you must specify w
     }
 }
 
-The plugin makes four new SQL functions available within Datasette. We will be using the following function in our custom query:
+We can now use the following function in our custom query:
 
 ```
 faiss_search_with_scores(database, table, embedding, k)
@@ -196,8 +196,8 @@ select
 from
   json_each(
     faiss_search_with_scores(
-      '5krecipes',
-      'embeddings',
+      '5k-recipes',
+      'recipe_embeddings',
       (
         select
           openai_embedding(:query, :openai_api_key)
@@ -207,12 +207,18 @@ from
   )
 ```
 
-Describe what this does.
+This innermost subquery ("select openai_embedding(:query, :openai_api_key)") calculates the OpenAI embedding for the user's query (:query) using the API key specified (:openai_api_key). The result is a binary object representing the floating-point embedding for the provided text.
+
+The result from the OpenAI embedding calculation is then used as the embedding parameter in the faiss_search_with_scores function. This function performs a semantic search using Faiss on the specified database ('5k-recipes') and table ('recipe_embeddings'). It returns a JSON array of the 10 nearest neighbors and their similarity scores to the provided embedding.
+
+The outermost part of the query uses json_each to extract values from the JSON array returned by the faiss_search_with_scores function. This allows the query to retrieve the actual values (recipe ids in this case) associated with the nearest neighbors.
 
 Now we just need to make two small updates. First, add "where length(coalesce(:query, '')) > 0" to prevent the query from running if the user hasn't added anything into the search box yet. If you do not add this, you will get this error message "user-defined function raised exception." Then, since we are going to put this query into our metadata.json file, the whole query should just be formatted as one long string.
 
 Our custom sql query for embedding search should now look like this:
 "select value from json_each(faiss_search_with_scores('5krecipes', 'embeddings', (select openai_embedding(:query, :openai_api_key)), 10)) where length(coalesce(:query, '')) > 0"
+
+...
 
 Update the metadata.json file queries section:
 
