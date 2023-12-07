@@ -312,21 +312,17 @@ Head on over to [http://localhost:8001/5k-recipes/semantic-search](http://localh
 
 And how about that! Feel-Good Chicken Soup, Italian Sundaes with Nutella, Chicken and Squash Cacciatore... I'm already feeling better.
 
-We can see at the bottom of the Datasette page that it took about 260ms to run this query. Compare this with the 10ms it took to run the same full-text search on the recipes table. But that query only returned two results. Semantic search gave us more results in number and significance.  
+We can see at the bottom of the Datasette page that it took about 260ms to run this query. Compare this with the 10ms it took to run the same full-text search on the recipes table. But that query only returned two results. Semantic search gave us better results in number, significance, and deliciousness.
 
-With "vibes-based search" I can also search for something much more conceptual, such as "a small levantine appetizer". If I try this query over on the recipes_fts table, I get the following response: "0 rows where search matches "a small levantine appetizer" sorted by rowid"
+With this "vibes-based search" I can also grasp for something much more conceptual, such as "a small levantine appetizer." If I try this query using full text search, I get the following response: "0 rows where search matches "a small levantine appetizer" sorted by rowid"
 
-But with my custom query that creates an embedding on the query phrase and then uses Faiss to find the approximate nearest neighbors, I get "Sam's Spring Fattoush Salad", "spiced labneh", and eight other recipes. The word "levantine" does not show up at all in these recipes. Instead, the embedding gets at the underlying meaning in the word "levantine" and the similarity search algorithm helps us find the most relevant documents. 
+But with my custom query that first creates an embedding on the query phrase and then uses Faiss to find the approximate nearest neighbors, I get "Sam's Spring Fattoush Salad", "spiced labneh", and eight other recipes. The word "levantine" does not show up at all in these recipes. Instead, the embedding gets at the underlying meaning in the word "levantine" and the similarity search algorithm helps us find the most relevant documents. 
 
-## Conclusion
+## Key takeaways:
 
-Here are the key takeaways:
+Datasette is highly extensible: It allows you to install plugins that enhance its functionality, such as the datasette-openai and datasette-faiss plugins that enable the integration of OpenAI's API and the Faiss library into Datasette's SQL queries.
 
-Datasette's Extensibility: Datasette is designed to be highly extensible. It allows you to install plugins that enhance its functionality, such as the datasette-openai and datasette-faiss plugins mentioned in the post. These plugins enable the integration of OpenAI's API and the Faiss library into Datasette's SQL queries.
-
-Custom Functions: The blog post demonstrates the use of custom SQL functions provided by these plugins. For example, the openai_embedding function and faiss_search_with_scores function are not standard SQL functions. They are custom functions made available through the installed plugins.
-
-Python Integration: Datasette allows Python code to be seamlessly integrated into SQL queries. This is achieved by using special functions that can execute Python code, such as openai_embedding and faiss_search_with_scores. The Python code is executed in the context of the Datasette environment.
+Python Integration: Datasette allows Python code to be integrated into SQL queries. This is achieved by using special functions that can execute Python code, such as openai_embedding and faiss_search_with_scores. The Python code is executed in the context of the Datasette environment.
 
 Metadata File: The metadata file (metadata.json) is used to configure Datasette's behavior, including defining custom queries, plugins, and other settings. It helps organize and describe the data and functionality provided by Datasette.
 
