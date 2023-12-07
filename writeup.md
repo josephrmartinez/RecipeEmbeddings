@@ -327,3 +327,5 @@ Python Integration: Datasette allows Python code to be integrated into SQL queri
 Metadata File: The metadata file (metadata.json) is used to configure Datasette's behavior, including defining custom queries, plugins, and other settings. It helps organize and describe the data and functionality provided by Datasette.
 
 In traditional SQL databases, you typically don't have this level of integration with external services or custom Python functions. However, Datasette's approach makes it easy to extend the capabilities of SQLite databases, providing a powerful and flexible platform for exploring and interacting with data.
+
+*Note: this tutorial is largely modeled after Willison's posts on his blog, starting with [this post](https://simonwillison.net/2023/Jan/13/semantic-search-answers/). I simplified things a bit and focused more narrowly on implementing semantic search and working with Datasette for the first time.* 
