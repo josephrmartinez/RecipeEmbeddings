@@ -3,8 +3,8 @@
     "description": "Search recipes using embeddings or full text.",
     "databases": {
       "5krecipes": {
-        "source": "Food Ingredients and Recipes Dataset with Images. From Epicurious.",
-        "source_url": "https://www.kaggle.com/datasets/pes12017000148/food-ingredients-and-recipe-dataset-with-images",
+        "source": "Recipe Dataset from Epicurious.",
+        "source_url": "https://github.com/josephrmartinez/recipe-dataset",
         "license": "CC BY-SA 3.0",
         "license_url": "https://creativecommons.org/licenses/by-sa/3.0/",
         "tables" : {
